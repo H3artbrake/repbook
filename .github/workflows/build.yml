@@ -3,6 +3,7 @@ name: Publish Docker image
 on:
   push:
     branches: [main]
+    tags: ['v*']
   workflow_dispatch:
 
 permissions:
@@ -28,3 +29,8 @@ jobs:
           docker build --label "org.opencontainers.image.source=https://github.com/$REPOSITORY" --label "org.opencontainers.image.revision=$COMMIT" -t "$image:latest" -t "$image:$COMMIT" .
           docker push "$image:$COMMIT"
           docker push "$image:latest"
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            docker tag "$image:$COMMIT" "$image:${GITHUB_REF_NAME}"
+            docker push "$image:${GITHUB_REF_NAME}"
+          fi
+
