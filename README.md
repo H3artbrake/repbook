@@ -6,7 +6,7 @@ A small workout tracker for your NAS. One Docker container, one SQLite database,
 
 ### Install the ready-built GitHub image
 
-Each push to `main` runs checks, smoke-tests the container, then publishes `ghcr.io/h3artbrake/repbook:latest` and a commit-specific tag. This image targets the x86-64 architecture used by the DXP4800 Plus. Check that the repository's **Actions** run succeeds before installing it.
+Each push to `main` builds and publishes `ghcr.io/h3artbrake/repbook:latest` and a commit-specific tag. This image targets the x86-64 architecture used by the DXP4800 Plus. Check that the repository's **Actions** run succeeds before installing it.
 
 The repository is public. Once the container package is public, the NAS can pull it without a GitHub login. If a pull returns an authentication error, check that the package visibility is Public under GitHub Packages → repbook → Package settings.
 
@@ -60,13 +60,13 @@ Use **Start empty session** on Workouts or Session to log an unplanned workout. 
 - Blank weight means bodyweight. Positive kg is ordinary weight (or added weight for bodyweight exercises). Enter negative kg for assistance; it is stored separately as assistance.
 - Enter dumbbell weight per dumbbell and single-side reps per side. Use the same convention each time. Volume is based on exactly the entered load; no inferred doubling or body mass.
 - Templates affect future sessions. History preserves the exercise names recorded at the time. History → View → Edit lets you correct past entries; dates can be backdated.
-- New sessions start with one blank row per exercise. New rows have blank reps and do not count until you enter reps.
+- Templates with recommendations start with the recommended number of blank set rows. Other exercises start with one blank row. New rows have blank reps and do not count until you enter reps.
 
-## Progress and optional hints
+## Progress
 
 Progress opens with mini-graph cards for exercises you have actually logged, most recent first. Search by name or use the Upper body, Lower body, Core and Other dropdown. These controls are also available in workout lists, history and exercise pickers. Mixed workouts appear under each included area. Tap a card, or an exercise name during a session, for its full graph and actual sets. The graph automatically follows the most common load type in the latest session: heaviest weight, added weight, bodyweight reps, or least assistance. Only when you have logged different load types do relevant tabs appear. Dates are spaced in real elapsed time. Multiple sessions on the same date are retained separately. The interface uses neutral charcoal surfaces with limited pink highlights; session logging has no notes field. Notes in older backups are preserved.
 
-Hints are deterministic arithmetic, not coaching. They repeat the previous set count. With at least two completed sets at the same load and load type, if every set reaches the upper rep threshold, the hint suggests one equipment increment more (or one increment less assistance). Otherwise it suggests repeating the previous baseline and working toward the chosen rep threshold. Bodyweight sets get an optional extra-rep hint. Mixed loads do not get an automatic increase. Defaults are an editable 8–12 rep range and a 1 or 2.5 kg step. These thresholds are preferences, not individual recommendations. Hints cannot assess form, effort, fatigue or readiness. Turn them off in Settings.
+Recommended sets and reps are editable per exercise in the workout template. Targets never count as logged reps.
 
 ## Backup, restore and updates
 
@@ -93,3 +93,4 @@ Open `http://localhost:3000`. No dependency installation or frontend build is re
 The included tests cover account setup, sign-in, user isolation, stale-write protection, validation, persistence, backup restore, progression rules and chart calculations. Docker execution and phone installation need verification on your NAS; Docker was not available in the build workspace.
 
 References: [Tailscale Serve](https://tailscale.com/docs/features/tailscale-serve), [Serve CLI](https://tailscale.com/docs/reference/tailscale-cli/serve), [PWA installation requirements](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Guides/Making_PWAs_installable), [Node SQLite](https://nodejs.org/api/sqlite.html).
+

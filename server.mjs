@@ -5,7 +5,7 @@ import { promisify } from 'node:util';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { seed } from './seed.mjs';
+import { seed, upgradeStarters } from './seed.mjs';
 
 const scrypt=promisify(scryptCb), root=path.dirname(fileURLToPath(import.meta.url));
 const dataDir=process.env.DATA_DIR||path.join(root,'data');
@@ -17,6 +17,14 @@ CREATE TABLE IF NOT EXISTS states(user_id INTEGER PRIMARY KEY REFERENCES users(i
 CREATE TABLE IF NOT EXISTS tokens(hash TEXT PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, expires INTEGER NOT NULL);
 CREATE INDEX IF NOT EXISTS idx_tokens_expires ON tokens(expires); PRAGMA user_version=1;`);
 const port=Number(process.env.PORT||3000), host=process.env.HOST||'0.0.0.0';
+db.exec('BEGIN IMMEDIATE');
+try {
+  for(const row of db.prepare('SELECT user_id,body FROM states').all()) {
+    const state=JSON.parse(row.body);
+    if(upgradeStarters(state))db.prepare('UPDATE states SET body=?,revision=revision+1 WHERE user_id=?').run(JSON.stringify(state),row.user_id);
+  }
+  db.exec('COMMIT');
+} catch(error) {db.exec('ROLLBACK');throw error;}
 const appOrigin=process.env.APP_ORIGIN?new URL(process.env.APP_ORIGIN).origin:null;
 const secure=process.env.COOKIE_SECURE==='true'||appOrigin?.startsWith('https:');
 const fail=(status,message)=>{throw Object.assign(new Error(message),{status});};
@@ -61,11 +69,14 @@ export function validateState(s) {
   if(!unique(s.exercises.map(x=>x?.id))||!unique(s.templates.map(x=>x?.id))||!unique(s.sessions.map(x=>x?.id)))bad();
   for(const e of s.exercises)if(!e||!idOk(e.id)||!textOk(e.name)||typeof e.group!=='string'||e.group.length>80||typeof e.bodyweight!=='boolean'||!numberOk(e.increment,0.25,100)||!Number.isInteger(e.repMin)||!Number.isInteger(e.repMax)||e.repMin<1||e.repMax<e.repMin||e.repMax>100)bad();
   const ids=new Set(s.exercises.map(e=>e.id));
+  const recommendationOk=r=>r&&Number.isInteger(r.sets)&&r.sets>=1&&r.sets<=10&&Number.isInteger(r.reps)&&r.reps>=1&&r.reps<=100;
+  for(const t of s.templates)if(t.recommendations!==undefined&&(!t.recommendations||typeof t.recommendations!=='object'||Array.isArray(t.recommendations)||Object.entries(t.recommendations).some(([id,r])=>!t.exerciseIds?.includes(id)||!recommendationOk(r))))bad();
   for(const t of s.templates)if(!t||!idOk(t.id)||!textOk(t.name)||!Array.isArray(t.exerciseIds)||!t.exerciseIds.length||t.exerciseIds.length>50||!unique(t.exerciseIds)||t.exerciseIds.some(id=>!ids.has(id)))bad();
   for(const session of [...s.sessions,...(s.active?[s.active]:[])]) {
     if(!session||!idOk(session.id)||!textOk(session.templateName)||typeof session.date!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(session.date)||!Number.isFinite(Date.parse(session.date))||new Date(session.date).toISOString().slice(0,10)!==session.date||typeof session.notes!=='string'||session.notes.length>4000||!Array.isArray(session.exercises)||session.exercises.length>50||!unique(session.exercises.map(e=>e?.exerciseId)))bad();
     if(s.sessions.includes(session)&&(!textOk(session.finishedAt)||!Number.isFinite(Date.parse(session.finishedAt))))bad();
     for(const e of session.exercises){
+      if(e.recommendation!==undefined&&!recommendationOk(e.recommendation))bad();
       if(!e||!ids.has(e.exerciseId)||!textOk(e.name)||!Array.isArray(e.sets)||e.sets.length>100||!unique(e.sets.map(x=>x?.id)))bad();
       for(const set of e.sets)if(!set||!idOk(set.id)||!['weighted','added','assisted'].includes(set.mode)||typeof set.done!=='boolean'||!(set.weight===null||numberOk(set.weight,0,2000))||!(set.reps===null||(Number.isInteger(set.reps)&&set.reps>=1&&set.reps<=1000))||(set.done&&set.reps===null))bad();
     }
