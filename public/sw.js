@@ -1,4 +1,4 @@
-const CACHE='repbook-shell-v9';
+const CACHE='repbook-shell-v1.0.1';
 const FILES=['/','/index.html','/style.css','/app.js','/logic.js','/manifest.webmanifest','/icon-192.png','/icon-512.png','/apple-touch-icon.png'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES))));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
