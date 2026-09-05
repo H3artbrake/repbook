@@ -1,0 +1,9 @@
+data/
+.env
+node_modules/
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
+*.zip
+work/
