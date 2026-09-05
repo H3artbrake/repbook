@@ -30,3 +30,4 @@
 .template-row{flex-wrap:wrap}.template-row>span{flex:1 1 100%}.template-row>label{flex:1 1 65px;min-width:0;font-size:.8rem}.template-row>label input{width:100%;min-width:0}
 
 .set-row select{min-width:0;width:100%;font-size:1rem}
+.exercise-list small{display:block}
